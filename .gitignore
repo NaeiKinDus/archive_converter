@@ -1,0 +1,9 @@
+.idea
+__pycache__
+*.pyc
+*.pyo
+venv
+test/**/*.jpg
+test/**/*.png
+test/**/*.cbz
+test/**/*.cbr
