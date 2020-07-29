@@ -24,14 +24,30 @@ def main(arguments):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert a bunch of images to a CBZ archive")
-    parser.add_argument('source', type=str, metavar='dir')
-    parser.add_argument('destination', type=str, metavar='dir')
     parser.add_argument(
-        '-ar', '--archive-type', default='cbz', choices=common.allowed_archive_extensions, type=str, metavar="extension"
+        'source', type=str, metavar='dir',
+        help='directory where the source images are located'
     )
-    parser.add_argument('-nm', '--naming-method', type=str, choices=common.naming_methods.keys(), default='directory')
-    parser.add_argument('-nf', '--naming-format', type=str)
-    parser.add_argument('-dr', '--dry-run', action='store_true')
+    parser.add_argument(
+        'destination', type=str, metavar='dir',
+        help='directory where the archives will be created'
+    )
+    parser.add_argument(
+        '-ar', '--archive-type', default='cbz', choices=common.allowed_archive_extensions, type=str, metavar="extension",
+        help='Type of target archive'
+    )
+    parser.add_argument(
+        '-nm', '--naming-method', type=str, choices=common.naming_methods.keys(), default='directory',
+        help='how the archive file name is generated'
+    )
+    parser.add_argument(
+        '-nf', '--naming-format', type=str,
+        help='string using variable replacement to generate an archive name when using the "context" naming method'
+    )
+    parser.add_argument(
+        '-dr', '--dry-run', action='store_true',
+        help='show what actions will be performed but do not execute them'
+    )
     args = parser.parse_args()
 
     if args.naming_method != 'directory' and not args.naming_format:
