@@ -34,19 +34,48 @@ def create_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Opti
     return None
 
 
-def unpack_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False):
-    pass
+def unpack_cbz(source_archive: str, destination: Optional[str] = None, dry_run: bool = False) -> Optional[str]:
+    """
+    Unpacks a CBZ archive to a temporary directory
+    :param source_archive: path to archive to be extracted
+    :type source_archive: str
+    :param destination: directory where the files will be unpacked
+    :type destination: str
+    :param dry_run: set to true to prevent execution and simply output expected commands
+    :type dry_run: bool
+    :return:
+    """
+    if dry_run:
+        if destination:
+            print('unpack_cbz(): using directory "{}" to unpack'.format(destination))
+        else:
+            print('unpack_cbz(): creating a temporary directory')
+        print('unpack_cbz(): chdir to directory')
+        print('unpack_cbz(): unzip source archive "{}"'.format(source_archive))
+        return None
+    if destination:
+        target_dir = destination
+    else:
+        target_dir = mkdtemp()
+
+    with (ZipFile(source_archive)) as old_archive:
+        old_archive.extractall(path=target_dir)
+
+    return target_dir
 
 
 def create_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False) -> str:
     pass
 
 
-def unpack_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False):
+def unpack_cbr(source_archive: str, destination: Optional[str] = None, dry_run: bool = False) -> Optional[str]:
     pass
 
 
 class ArchiveHandler:
+    """
+    Class used to handle (un)archiving operations
+    """
     DRY_RUN: bool
 
     def __init__(self, dry_run: bool = False):
@@ -71,22 +100,31 @@ class ArchiveHandler:
             target_directory = destination
             if not path.isdir(destination):
                 if self.DRY_RUN:
-                    print('ArchiveHandler::unpack_files: destination does not exist, creating it')
+                    print('ArchiveHandler::unpack_files(): destination does not exist, creating it')
                 else:
-                    mkdir(destination)
+                    try:
+                        mkdir(destination)
+                    except Exception:
+                        print('Target destination "{}" is not a valid directory'.format(destination))
+                        raise
+            elif self.DRY_RUN:
+                print('ArchiveHandler::unpack_files(): using directory "{}" as repack destination')
         else:
             if self.DRY_RUN:
-                print('ArchiveHandler::unpack_files: creating a temporary directory')
+                print('ArchiveHandler::unpack_files(): creating a temporary directory for repacked files')
             else:
                 target_directory = mkdtemp()
+
         if not archive_type or 'auto' == archive_type:
             extension = archive_file.rsplit('.')[-1]
         else:
             extension = archive_type
         if extension not in self._packers or not self._packers[extension]:
             raise NotImplementedError('No valid unpacking method for extension "{}'.format(extension))
-        self._packers[extension][1](target_directory, self.DRY_RUN)
-        #self._packers[extension][1]()
+        if self.DRY_RUN:
+            print('ArchiveHandler::unpack_files(): files unpacked to target directory')
+        else:
+            self._packers[extension][1](archive_file, target_directory, self.DRY_RUN)
 
         return target_directory
 
@@ -112,7 +150,7 @@ class ArchiveHandler:
             raise NotImplementedError('No valid unpacking method for extension "{}'.format(extension))
         temp_file = self._packers[extension][0](source_files, self.DRY_RUN)
         if self.DRY_RUN:
-            print('ArchiveHandler::pack_files: moving zip file to "{}"'.format(destination))
+            print('ArchiveHandler::pack_files(): moving zip file to "{}"'.format(destination))
         else:
             rename(temp_file, destination)
 

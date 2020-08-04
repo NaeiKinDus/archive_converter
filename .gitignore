@@ -7,3 +7,6 @@ test/**/*.jpg
 test/**/*.png
 test/**/*.cbz
 test/**/*.cbr
+build
+dist
+src/ArchiveConverter.egg-info

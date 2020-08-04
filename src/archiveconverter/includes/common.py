@@ -9,7 +9,7 @@ format_parameters = {
     'src': 'directory where the file resides',
 }
 
-naming_methods = {
+supported_naming_methods = {
     'context': 'use context variables (see format parameters)',
     'directory': 'use the name of the parent directory (`dir`)'
     # The following are not yet implemented
@@ -18,7 +18,7 @@ naming_methods = {
 }
 
 allowed_file_extensions = [
-    'jpg', 'jpeg', 'png', 'bmp',
+    'jpg', 'jpeg', 'png', 'bmp', 'art', 'gif', 'pm', 'ppm', 'tif', 'tiff'
 ]
 
 allowed_archive_extensions = [
@@ -62,11 +62,11 @@ def get_files(source: str, file_types: Optional[List] = None, files_list: Option
     return files_list
 
 
-def generate_filename(cli_arguments, extension: str, source: str, cont_dir: str) -> str:
+def generate_filename(cli_arguments: dict, extension: str, source: str, cont_dir: str) -> str:
     """
     Generate a name for the CBZ file using one of various ways.
     :param cli_arguments: parsed CLI arguments
-    :type cli_arguments: Namespace
+    :type cli_arguments: dict
     :param extension: extension of the generated archive
     :type extension: str
     :param source: source directory of the images
@@ -82,18 +82,17 @@ def generate_filename(cli_arguments, extension: str, source: str, cont_dir: str)
     context['src'] = source
     context['extension'] = extension
 
-    if cli_arguments.destination:
-        context['destination'] = cli_arguments.destination
-    else:
-        context['destination'] = None
+    context['destination'] = cli_arguments.get('destination')
+    naming_format = cli_arguments.get('naming_format', '') or ''
 
-    if cli_arguments.naming_method not in naming_methods.keys():
-        raise NotImplementedError('Error: "{}" is not a valid naming method'.format(cli_arguments.naming_method))
-    if 'directory' == cli_arguments.naming_method:
+    naming_method = cli_arguments.get('naming_method')
+    if not naming_method or naming_method not in supported_naming_methods.keys():
+        raise NotImplementedError('Error: "{}" is not a valid naming method'.format(naming_method))
+    if 'directory' == naming_method or not naming_format:
         return os.path.join(context['destination'], '{}.{}'.format(cont_dir, extension))
-    elif 'context' == cli_arguments.naming_method:
-        return os.path.join(context['destination'], cli_arguments.naming_format.format_map(context))
-    raise NotImplementedError('Error: "{}" is not available'.format(cli_arguments.naming_method))
+    elif 'context' == naming_method:
+        return os.path.join(context['destination'], naming_format.format_map(context))
+    raise NotImplementedError('Error: "{}" is not available'.format(naming_method))
 
 
 def run_command():
