@@ -74,7 +74,7 @@ def unpack_cbr(source_archive: str, destination: Optional[str] = None, dry_run: 
 
 class ArchiveHandler:
     """
-    Class used to handle (un)archiving operations
+    Class used to handle (un)archiving operations more easily
     """
     DRY_RUN: bool
 
