@@ -41,7 +41,7 @@ if __name__ == "__main__":
         help='Type of target archive',
     )
     parser.add_argument(
-        '-nm', '--naming-method', type=str, choices=common.naming_methods.keys(), default='directory',
+        '-nm', '--naming-method', type=str, choices=common.supported_naming_methods.keys(), default='directory',
         help='how the archive file name is generated'
     )
     parser.add_argument(
