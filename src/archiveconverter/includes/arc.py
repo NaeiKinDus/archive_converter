@@ -1,10 +1,16 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*
 
+from archiveconverter.includes.common import run_command
 from os import path, rename, mkdir
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import NamedTemporaryFile, mkdtemp, gettempdir
 from typing import Tuple, List, Optional
+from uuid import uuid4
 from zipfile import ZipFile, ZIP_STORED
+from . import RAR_BIN
+
+
+RAR_FILES_STEP = 50
 
 
 def create_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Optional[str]:
@@ -22,6 +28,7 @@ def create_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Opti
         print('create_cbz(): create a zipfile with compression=ZIP_STORE // compressLevel=7')
     else:
         temp_file = NamedTemporaryFile('xb', delete=False)
+        filename = temp_file.name
         cbz_file = ZipFile(temp_file, mode='w', compression=ZIP_STORED, compresslevel=7)
     for file in files_list:
         if dry_run:
@@ -30,7 +37,8 @@ def create_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Opti
             cbz_file.write(file[1], arcname=file[0])
     if not dry_run:
         cbz_file.close()
-        return temp_file.name
+        temp_file.close()
+        return filename
     return None
 
 
@@ -64,8 +72,20 @@ def unpack_cbz(source_archive: str, destination: Optional[str] = None, dry_run: 
     return target_dir
 
 
-def create_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False) -> str:
-    pass
+def create_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Optional[str]:
+    # RAR_BIN 'a -m<0=store,...5=best> -ma<archiving_version> <archive_name> files...'
+    if not RAR_BIN:
+        raise RuntimeError('Binary "rar" was not found, please install it and ensure it is in your PATH variable')
+    command = [RAR_BIN, 'a', '-m0', '-ma4']
+    filename = path.join(gettempdir(), '{}.cbr'.format(uuid4()))
+    files_list = list(map(lambda x: x[1], files_list))
+    sublists = [files_list[pos:pos+RAR_FILES_STEP] for pos in range(0, len(files_list), RAR_FILES_STEP)]
+    for call_iter in sublists:
+        if not dry_run:
+            run_command(command + [filename] + call_iter)
+        else:
+            print('create_cbr(): running command "{}"'.format(' '.join(command + [filename] + call_iter)))
+    return filename
 
 
 def unpack_cbr(source_archive: str, destination: Optional[str] = None, dry_run: bool = False) -> Optional[str]:

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from natsort import natsorted, ns
 import os
-from typing import List, Dict, Optional
+from subprocess import check_call
+from typing import List, Dict, Optional, Union
+from unicodedata import normalize
 
 
 format_parameters = {
@@ -26,7 +29,7 @@ allowed_archive_extensions = [
 ]
 
 
-def get_files(source: str, file_types: Optional[List] = None, files_list: Optional[Dict] = None) -> Dict:
+def get_files(source: str, file_types: Optional[List] = None, files_list: Optional[Dict] = None, sort_list: bool = True) -> Dict:
     """
     Retrieves a list of directories and images recursively.
 
@@ -42,9 +45,10 @@ def get_files(source: str, file_types: Optional[List] = None, files_list: Option
     s_source = source.rstrip(os.path.sep)
     if not files_list:
         files_list = {}
+
     for file in os.scandir(s_source):
         if file.is_dir():
-            files_list = get_files(os.path.join(s_source, file.name), file_types, files_list)
+            files_list = get_files(os.path.join(s_source, file.name), file_types, files_list, False)
             continue
         filepath = os.path.join(s_source, file.name)
         extension = file.name.split('.')[-1].lower()
@@ -58,7 +62,11 @@ def get_files(source: str, file_types: Optional[List] = None, files_list: Option
                 'src': s_source,
                 'files_list': []
             }
-        files_list[s_source]['files_list'].append([file.name, filepath])
+        files_list[s_source]['files_list'].append((file.name, filepath))
+
+    if sort_list:
+        for item_name, item_data in files_list.items():
+            item_data['files_list'] = natsorted(item_data['files_list'], alg=ns.IGNORECASE)
     return files_list
 
 
@@ -95,5 +103,23 @@ def generate_filename(cli_arguments: dict, extension: str, source: str, cont_dir
     raise NotImplementedError('Error: "{}" is not available'.format(naming_method))
 
 
-def run_command():
-    pass
+def run_command(command: Union[str, list], verbose: bool = False) -> int:
+    if isinstance(command, str):
+        command_list = command.split()
+    else:
+        command_list = command
+    if verbose:
+        return check_call(
+            command_list
+        )
+
+    with open(os.devnull, 'w') as devnull:
+        return check_call(
+            command_list,
+            stdout=devnull,
+            stderr=devnull
+        )
+
+
+def strip_accents(filename: str) -> str:
+    return normalize('NFKD', filename).encode('ASCII', 'ignore').decode('utf-8')

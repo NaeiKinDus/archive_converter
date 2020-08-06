@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # Tests includes/arc.py
+from archiveconverter.includes.common import get_files
+from archiveconverter.includes.arc import create_cbz, unpack_cbz
 from os import path, unlink
 from pytest import mark
 from shutil import move, rmtree
 from typing import Optional, Any
-from archiveconverter.includes.common import get_files
-from archiveconverter.includes.arc import create_cbz, unpack_cbz
 from .config import get_files_data, get_zip_file_list, OUTPUT_DIR,\
     unpack_cbz_data
 

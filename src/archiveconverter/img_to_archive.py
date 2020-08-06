@@ -17,6 +17,8 @@ def main(arguments):
 
     for source, files in files_list.items():
         target_filename = common.generate_filename(vars(arguments), arguments.archive_type, source, files['dir'])
+        if arguments.strip_accents:
+            target_filename = common.strip_accents(target_filename)
         if arguments.dry_run:
             print('img_to_cbz: using target filename "{}"'.format(target_filename))
         arc_manager.pack_files(files['files_list'], target_filename)
@@ -43,6 +45,10 @@ if __name__ == "__main__":
     parser.add_argument(
         '-nm', '--naming-method', type=str, choices=common.supported_naming_methods.keys(), default='directory',
         help='how the archive file name is generated'
+    )
+    parser.add_argument(
+        '-sa', '--strip-accents', default=True, action='store_true',
+        help='convert image filenames to non-accentuated chars, or strip them; some readers require this'
     )
     parser.add_argument(
         '-nf', '--naming-format', type=str,
