@@ -5,7 +5,7 @@
 
 ### Usage
 #### Basics
-##### img_to_cbz
+##### img_to_archive
 > Creating one CBZ archive from a directory containing images, using the default ("directory") naming scheme
 ```bash
 # Source directory layout:
@@ -14,7 +14,7 @@
 # +-> [ ... ]
 # +-> imgX.png
 
-./img_to_cbz.py "source_dir/Awesome Comic/The first adventure - T1" "dst_dir/Awesome Comic"
+./img_to_archive.py "source_dir/Awesome Comic/The first adventure - T1" "dst_dir/Awesome Comic"
 
 # Output:
 # -> dst_dir/Awesome Comic/
@@ -35,7 +35,7 @@
 # ++-> [ ... ]
 # ++-> imgX.png
 
-./img_to_cbz.py --naming-method context --naming-format 'Awesome Comic - {dir}.cbz' "source_dir/Awesome Comic" "dst_dir/Awesome Comic"
+./img_to_archive.py --naming-method context --naming-format 'Awesome Comic - {dir}.cbz' "source_dir/Awesome Comic" "dst_dir/Awesome Comic"
 
 # Output:
 # -> dst_dir/Awesome Comic/
@@ -53,7 +53,7 @@
 #### Renaming target files / directory
 
 ### Examples
-**img_to_cbz**:
+**img_to_archive**:
 ```bash
 
 ```
