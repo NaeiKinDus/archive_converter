@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import os
+
 from archiveconverter.includes.common import get_files, generate_filename, supported_naming_methods, \
     allowed_archive_extensions as allowed_extensions, strip_accents
 from archiveconverter.includes.arc import ArchiveHandler
-import os
 
 
 repack_modes = [
@@ -19,7 +20,7 @@ def main(arguments):
     if arguments.source_extension and arguments.source_extension != '*':
         match_extension = arguments.source_extension.split(',')
 
-    arc_manager = ArchiveHandler(dry_run=arguments.dry_run)
+    arc_manager = ArchiveHandler()
 
     for source_item in arguments.source:
         if os.path.isdir(source_item):
@@ -38,7 +39,7 @@ def main(arguments):
             for (filename, filepath) in dir_info['files_list']:
                 unpack_dir = arc_manager.unpack_archive(filepath)
                 if arguments.naming_method == 'source_name':
-                    target_filename = filename
+                    target_filename = '.'.join(filename.split('.')[0:-1] + [arguments.archive_type])
                 else:
                     target_filename = generate_filename(vars(arguments), arguments.archive_type, filename, dir_info['dir'])
                 if arguments.strip_accents:
@@ -54,8 +55,8 @@ def main(arguments):
 @todo support --mode
 @todo support --in-place
 @todo support --remove
-@todo support --dry-run
 @todo support --rar-version
+@todo support --dry-run
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Repack comic archives to the specified type")
@@ -105,12 +106,12 @@ if __name__ == "__main__":
         '-nf', '--naming-format', type=str,
         help='string using variable replacement to generate an archive name when using the "context" naming method'
     )
-    parser.add_argument(
-        '-dr', '--dry-run', action='store_true',
-        help='show what actions will be performed but do not execute them'
-    )
+    # parser.add_argument(
+    #     '-dr', '--dry-run', action='store_true',
+    #     help='show what actions will be performed but do not execute them'
+    # )
     args = parser.parse_args()
 
-    if args.rar_version not in [4, 5]:
-        parser.error('--rar-version supports version 4 or 5.')
+    # if args.rar_version not in [4, 5]:
+    #     parser.error('--rar-version supports version 4 or 5.')
     main(args)

@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 # Test data and functions used by pytest
 
-import zipfile
-
-
 # Config parameters
 OUTPUT_DIR = 'tests/output'
 
@@ -141,9 +138,9 @@ generate_filename_data = [
 ]
 
 unpack_cbz_data = [
-    # source_file, destination, expected
+    # source_file, destination, validator, expected
     (
-        'tests/archive/non-existent',
+        'tests/archives/non-existent',
         None,
         lambda x: isinstance(x, FileNotFoundError),
         None
@@ -173,10 +170,46 @@ unpack_cbz_data = [
 ]
 
 
-def get_zip_file_list(filename: str) -> list:
-    assert zipfile.is_zipfile(filename)
-    with zipfile.ZipFile(filename, 'r') as source_zip:
-        assert not source_zip.testzip()
-        source_list = source_zip.namelist()
-        source_list.sort()
-        return source_list
+unpack_cbr_data = [
+    # source_file, destination, validator, expected
+    (
+        'tests/archives/non-existent',
+        None,
+        lambda x: isinstance(x, FileNotFoundError),
+        None
+    ),
+    (
+        'tests/archives/Book 2 - Numbers.cbr',
+        None,
+        lambda x: x.startswith('/tmp/tmp'),
+        [
+            'number_1.png',
+            'number_2.png',
+            'number_3.png',
+            'number_4.png',
+            'number_5.png',
+            'number_6.png',
+            'number_7.png',
+            'number_8.png',
+            'number_9.png',
+            'number_10.png',
+        ]
+    ),
+    (
+        'tests/archives/Book 2 - Numbers.cbr',
+        '{}/Book 2'.format(OUTPUT_DIR),
+        lambda x: x == '{}/Book 2'.format(OUTPUT_DIR),
+        [
+            'number_1.png',
+            'number_2.png',
+            'number_3.png',
+            'number_4.png',
+            'number_5.png',
+            'number_6.png',
+            'number_7.png',
+            'number_8.png',
+            'number_9.png',
+            'number_10.png',
+        ]
+    ),
+]

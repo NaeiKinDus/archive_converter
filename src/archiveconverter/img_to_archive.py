@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+
 from archiveconverter.includes import common
 from archiveconverter.includes.arc import ArchiveHandler
 
@@ -20,13 +21,13 @@ def main(arguments):
         if arguments.strip_accents:
             target_filename = common.strip_accents(target_filename)
         if arguments.dry_run:
-            print('img_to_cbz: using target filename "{}"'.format(target_filename))
+            print('img_to_archive: using target filename "{}"'.format(target_filename))
         arc_manager.pack_files(files['files_list'], target_filename)
 
 
 """
 @todo support more format
-@todo rename script (doesn't handle only cbz)
+@todo handle --dry-run
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert a bunch of images to a CBZ archive")
@@ -54,10 +55,10 @@ if __name__ == "__main__":
         '-nf', '--naming-format', type=str,
         help='string using variable replacement to generate an archive name when using the "context" naming method'
     )
-    parser.add_argument(
-        '-dr', '--dry-run', action='store_true',
-        help='show what actions will be performed but do not execute them'
-    )
+    # parser.add_argument(
+    #     '-dr', '--dry-run', action='store_true',
+    #     help='show what actions will be performed but do not execute them'
+    # )
     args = parser.parse_args()
 
     if args.naming_method != 'directory' and not args.naming_format:

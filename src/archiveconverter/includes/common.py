@@ -2,8 +2,8 @@
 
 from natsort import natsorted, ns
 import os
-from subprocess import check_call
-from typing import List, Dict, Optional, Union
+from subprocess import check_call, Popen, PIPE
+from typing import List, Dict, Optional, Union, Tuple
 from unicodedata import normalize
 
 
@@ -103,21 +103,34 @@ def generate_filename(cli_arguments: dict, extension: str, source: str, cont_dir
     raise NotImplementedError('Error: "{}" is not available'.format(naming_method))
 
 
-def run_command(command: Union[str, list], verbose: bool = False) -> int:
+def run_command(command: Union[str, list], verbose: bool = False) -> Tuple[int, str]:
+    """
+    Executes a command
+    :param command: command to be executed; may be an str or a list
+    :type command: Union[str, list]
+    :param verbose: whether to capture the command output
+    :type verbose: bool
+    :return: a tuple with the return code and a string, empty if verbose is not True
+    :rtype: Tuple[int, str]
+    """
     if isinstance(command, str):
         command_list = command.split()
     else:
         command_list = command
     if verbose:
-        return check_call(
-            command_list
-        )
+        proc = Popen(command_list, stdout=PIPE, stderr=PIPE)
+        output, err = proc.communicate()
+        return proc.returncode, output.decode('utf-8')
 
     with open(os.devnull, 'w') as devnull:
-        return check_call(
-            command_list,
-            stdout=devnull,
-            stderr=devnull
+        return (
+            check_call(
+                command_list,
+                stdin=devnull,
+                stdout=devnull,
+                stderr=devnull
+            ),
+            ''
         )
 
 

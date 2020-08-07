@@ -1,66 +1,47 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*
 
-from archiveconverter.includes.common import run_command
 from os import path, rename, mkdir
 from tempfile import NamedTemporaryFile, mkdtemp, gettempdir
 from typing import Tuple, List, Optional
 from uuid import uuid4
 from zipfile import ZipFile, ZIP_STORED
+
+from archiveconverter.includes.common import run_command
 from . import RAR_BIN
 
 
 RAR_FILES_STEP = 50
 
 
-def create_cbz(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Optional[str]:
+def create_cbz(files_list: List[Tuple[str, str]]) -> Optional[str]:
     """
     Create a zip containing all the specified files.
     :param files_list: list containing all files to zip
     :type files_list: list
-    :param dry_run: set to true to prevent execution and simply output expected commands
-    :type dry_run: bool
     :return: zip file path
     :rtype: str
     """
-    if dry_run:
-        print('create_cbz(): creating a temporary file')
-        print('create_cbz(): create a zipfile with compression=ZIP_STORE // compressLevel=7')
-    else:
-        temp_file = NamedTemporaryFile('xb', delete=False)
-        filename = temp_file.name
-        cbz_file = ZipFile(temp_file, mode='w', compression=ZIP_STORED, compresslevel=7)
+    temp_file = NamedTemporaryFile('xb', delete=False)
+    filename = temp_file.name
+    cbz_file = ZipFile(temp_file, mode='w', compression=ZIP_STORED, compresslevel=7)
     for file in files_list:
-        if dry_run:
-            print('create_cbz(): processing source file "{}", storing as "{}"'.format(file[1], file[0]))
-        else:
-            cbz_file.write(file[1], arcname=file[0])
-    if not dry_run:
-        cbz_file.close()
-        temp_file.close()
-        return filename
-    return None
+        cbz_file.write(file[1], arcname=file[0])
+    cbz_file.close()
+    temp_file.close()
+    return filename
 
 
-def unpack_cbz(source_archive: str, destination: Optional[str] = None, dry_run: bool = False) -> Optional[str]:
+def unpack_cbz(source_archive: str, destination: Optional[str] = None) -> Optional[str]:
     """
     Unpacks a CBZ archive to a temporary directory
     :param source_archive: path to archive to be extracted
     :type source_archive: str
     :param destination: directory where the files will be unpacked
     :type destination: str
-    :param dry_run: set to true to prevent execution and simply output expected commands
-    :type dry_run: bool
-    :return:
+    :return: returns the directory where files were unarchived
+    :rtype: Optional[str]
     """
-    if dry_run:
-        if destination:
-            print('unpack_cbz(): using directory "{}" to unpack'.format(destination))
-        else:
-            print('unpack_cbz(): creating a temporary directory')
-        print('unpack_cbz(): chdir to directory')
-        print('unpack_cbz(): unzip source archive "{}"'.format(source_archive))
-        return None
     if destination:
         target_dir = destination
     else:
@@ -72,7 +53,14 @@ def unpack_cbz(source_archive: str, destination: Optional[str] = None, dry_run: 
     return target_dir
 
 
-def create_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Optional[str]:
+def create_cbr(files_list: List[Tuple[str, str]]) -> Optional[str]:
+    """
+    Create a CBR archive
+    :param files_list: list of files to add to the archive
+    :type files_list: List[Tuple[str, str]]
+    :return: returns the path to the created archive file (or None if dry-run)
+    :rtype: Optional[str]
+    """
     # RAR_BIN 'a -m<0=store,...5=best> -ma<archiving_version> <archive_name> files...'
     if not RAR_BIN:
         raise RuntimeError('Binary "rar" was not found, please install it and ensure it is in your PATH variable')
@@ -81,26 +69,40 @@ def create_cbr(files_list: List[Tuple[str, str]], dry_run: bool = False) -> Opti
     files_list = list(map(lambda x: x[1], files_list))
     sublists = [files_list[pos:pos+RAR_FILES_STEP] for pos in range(0, len(files_list), RAR_FILES_STEP)]
     for call_iter in sublists:
-        if not dry_run:
-            run_command(command + [filename] + call_iter)
-        else:
-            print('create_cbr(): running command "{}"'.format(' '.join(command + [filename] + call_iter)))
+        run_command(command + [filename] + call_iter)
     return filename
 
 
-def unpack_cbr(source_archive: str, destination: Optional[str] = None, dry_run: bool = False) -> Optional[str]:
-    pass
+def unpack_cbr(source_archive: str, destination: Optional[str] = None) -> Optional[str]:
+    """
+    Unpacks a CBR archive to a temporary directory
+    :param source_archive: path to archive to be extracted
+    :type source_archive: str
+    :param destination: directory where the files will be unpacked
+    :type destination: str
+    :return: returns the directory where files were unarchived
+    :rtype: Optional[str]
+    """
+    if not RAR_BIN:
+        raise RuntimeError('Binary "rar" was not found, please install it and ensure it is in your PATH variable')
+    if not path.isfile(source_archive):
+        raise FileNotFoundError('"{}" is not a valid archive file'.format(source_archive))
+    if destination:
+        destination = destination.rstrip(path.sep)
+        if not path.isdir(destination):
+            mkdir(destination)
+        target_dir = destination
+    else:
+        target_dir = mkdtemp()
+    command = [RAR_BIN, 'e', '-o+', source_archive, target_dir]
+    run_command(command)
+    return target_dir
 
 
 class ArchiveHandler:
     """
     Class used to handle (un)archiving operations more easily
     """
-    DRY_RUN: bool
-
-    def __init__(self, dry_run: bool = False):
-        self.DRY_RUN = dry_run
-
     def unpack_archive(
             self, archive_file: str, destination: Optional[str] = None, archive_type: Optional[str] = 'auto'
     ) -> str:
@@ -119,21 +121,13 @@ class ArchiveHandler:
         if destination:
             target_directory = destination
             if not path.isdir(destination):
-                if self.DRY_RUN:
-                    print('ArchiveHandler::unpack_files(): destination does not exist, creating it')
-                else:
-                    try:
-                        mkdir(destination)
-                    except Exception:
-                        print('Target destination "{}" is not a valid directory'.format(destination))
-                        raise
-            elif self.DRY_RUN:
-                print('ArchiveHandler::unpack_files(): using directory "{}" as repack destination')
+                try:
+                    mkdir(destination)
+                except Exception:
+                    print('Target destination "{}" is not a valid directory'.format(destination))
+                    raise
         else:
-            if self.DRY_RUN:
-                print('ArchiveHandler::unpack_files(): creating a temporary directory for repacked files')
-            else:
-                target_directory = mkdtemp()
+            target_directory = mkdtemp()
 
         if not archive_type or 'auto' == archive_type:
             extension = archive_file.rsplit('.')[-1]
@@ -141,11 +135,7 @@ class ArchiveHandler:
             extension = archive_type
         if extension not in self._packers or not self._packers[extension]:
             raise NotImplementedError('No valid unpacking method for extension "{}'.format(extension))
-        if self.DRY_RUN:
-            print('ArchiveHandler::unpack_files(): files unpacked to target directory')
-        else:
-            self._packers[extension][1](archive_file, target_directory, self.DRY_RUN)
-
+        self._packers[extension][1](archive_file, target_directory)
         return target_directory
 
     def pack_files(
@@ -168,11 +158,8 @@ class ArchiveHandler:
             extension = archive_type
         if extension not in self._packers or not self._packers[extension]:
             raise NotImplementedError('No valid unpacking method for extension "{}'.format(extension))
-        temp_file = self._packers[extension][0](source_files, self.DRY_RUN)
-        if self.DRY_RUN:
-            print('ArchiveHandler::pack_files(): moving zip file to "{}"'.format(destination))
-        else:
-            rename(temp_file, destination)
+        temp_file = self._packers[extension][0](source_files)
+        rename(temp_file, destination)
 
     """
     Callbacks for different archive types.

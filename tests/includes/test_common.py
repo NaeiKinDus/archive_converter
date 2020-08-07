@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # Tests includes/common.py
-from archiveconverter.includes.common \
-    import get_files, generate_filename, strip_accents, run_command
 from pytest import mark
 from typing import Union
+
+from archiveconverter.includes.common \
+    import get_files, generate_filename, strip_accents, run_command
 from .config import get_files_data, generate_filename_data
 
 
@@ -28,6 +29,11 @@ def test_strip_accents():
 
 
 def test_run_command():
-    for command in ['ls -lah', ['ls', '-lah']]:
-        ret_code = run_command(command, False)
-        assert ret_code == 0
+    for verbosity in [False, True]:
+        for command in ['ls -lah', ['ls', '-lah']]:
+            ret_code, ret_str = run_command(command, verbosity)
+            assert ret_code == 0
+            if not verbosity:
+                assert not ret_str
+            else:
+                assert ret_str
