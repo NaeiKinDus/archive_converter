@@ -14,14 +14,12 @@ def main(arguments):
     :return: None
     """
     files_list = common.get_files(arguments.source, common.allowed_file_extensions)
-    arc_manager = ArchiveHandler(dry_run=arguments.dry_run)
+    arc_manager = ArchiveHandler()
 
     for source, files in files_list.items():
         target_filename = common.generate_filename(vars(arguments), arguments.archive_type, source, files['dir'])
         if arguments.strip_accents:
             target_filename = common.strip_accents(target_filename)
-        if arguments.dry_run:
-            print('img_to_archive: using target filename "{}"'.format(target_filename))
         arc_manager.pack_files(files['files_list'], target_filename)
 
 
@@ -63,5 +61,4 @@ if __name__ == "__main__":
 
     if args.naming_method != 'directory' and not args.naming_format:
         parser.error('--naming-format is required if --naming-method is not set to `directory` (default)')
-    common.DRY_RUN = args.dry_run
     main(args)
